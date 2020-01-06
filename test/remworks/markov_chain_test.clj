@@ -6,6 +6,45 @@
 
 (def sample-size 100)
 
+(deftest analyse
+  (testing "one step lookback"
+    (is (= {:space      {[]  {1 1
+                              2 1
+                              3 1}
+                         [1] {2 1}
+                         [2] {3 1
+                              4 1}
+                         [3] {nil 1
+                              5   1}
+                         [4] {5 1}
+                         [5] {nil 1
+                              6   1}
+                         [6] {7 1}
+                         [7] {nil 1}}
+            :lookback   1
+            :max-length 4}
+           (sut/analyse [[1 2 3] [2 4 5] [3 5 6 7]] :lookback 1))))
+  (testing "multiple steps lookback"
+    (is (= {:space      {[]    {1 1
+                                2 1
+                                3 1}
+                         [1]   {2 1}
+                         [1 2] {3 1}
+                         [2 3] {nil 1}
+                         [2]   {4 1}
+                         [2 4] {5 1}
+                         [4 5] {nil 1}
+                         [5]   {nil 1}
+                         [3]   {nil 1
+                                5   1}
+                         [3 5] {6 1}
+                         [5 6] {7 1}
+                         [6 7] {nil 1}
+                         [7]   {nil 1}}
+            :lookback   2
+            :max-length 4}
+           (sut/analyse [[1 2 3] [2 4 5] [3 5 6 7]] :lookback 2)))))
+
 (deftest generate
   (let [gen (fn [text & opts]
               (sut/generate (apply sut/analyse text opts)))]

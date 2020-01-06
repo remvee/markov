@@ -3,7 +3,11 @@
   (:require [clojure.data.generators :as gen]
             [clojure.string :as s]))
 
-(def ^:private add-word (fnil conj []))
+(defn- add-word [s word]
+  (update s word (fnil inc 0)))
+
+(defn- merge-words [s1 s2]
+  (merge-with + s1 s2))
 
 (defn- analyse-line [words lookback]
   (reduce (fn [m i]
@@ -20,7 +24,7 @@
   largest row length in the corpus if no value is supplied."
   [corpus & {:keys [lookback max-length] :or {lookback 2}}]
   {:space      (reduce (fn [m line]
-                         (merge-with into m (analyse-line line lookback)))
+                         (merge-with merge-words m (analyse-line line lookback)))
                        {}
                        corpus)
    :lookback   lookback
@@ -35,7 +39,7 @@
   (let [max-length (or max-length (:max-length state-space))]
     (loop [r [], n 0]
       (let [c (->> r reverse (take lookback) reverse)
-            w (apply gen/one-of (get space c))]
+            w (gen/weighted (get space c))]
         (if (< n max-length)
           (if w
             (recur (conj r w) (inc n))

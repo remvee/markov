@@ -1,6 +1,6 @@
 (ns remworks.markov-chain
   "Implementation of Markov Chain to generate, for instance, text."
-  (:require [clojure.data.generators :as gen]
+  (:require #?(:clj [clojure.data.generators :as gen])
             [clojure.string :as s]))
 
 (defn- add-word [s word]
@@ -14,9 +14,27 @@
             (let [k (if (<= i lookback)
                       (->> words (take i))
                       (->> words (drop (- i lookback)) (take lookback)))]
-              (update m k add-word (when (< i (count words)) (nth words i)))))
+              (update m (vec k) add-word (when (< i (count words)) (nth words i)))))
           {}
           (range (+ (count words) lookback))))
+
+(defn weighted
+  "Pick a random value from a weighted set given a map for values and
+  weights.  The CLJ implementation of this function uses
+  `clojure.data.generators`, to get reproducible results use it's
+  `*rnd*` binding ."
+  [m]
+  #?(:clj (gen/weighted m)
+     ;; cljs version adapted from clojure.data.generators
+     :cljs (let [weights (reductions + (vals m))
+                 total   (last weights)
+                 choices (map vector (keys m) weights)]
+             (let [choice (.floor js/Math (* total (.random js/Math)))]
+               (loop [[[c w] & more] choices]
+                 (when w
+                   (if (< choice w)
+                     c
+                     (recur more))))))))
 
 (defn analyse
   "Analyse `corpus` and return a state space.  Option `lookback` determines the
@@ -31,15 +49,14 @@
    :max-length (or max-length (apply max (map count corpus)))})
 
 (defn generate
-  "Generate new chains from given `state-space`.  When the generated chain
-  exceeds `max-length` it will contain `::et-cetera` it the last position.
-  This code uses `clojure.data.generators` to deal with randomness, use it's
-  `*rnd*` binding to get reproducible results."
+  "Generate new chains from given `state-space`.  When the generated
+  chain exceeds `max-length` it will contain `::et-cetera` it the last
+  position.  This function uses `weighted` to do its random picking."
   [{:keys [space lookback max-length] :as state-space}]
   (let [max-length (or max-length (:max-length state-space))]
     (loop [r [], n 0]
       (let [c (->> r reverse (take lookback) reverse)
-            w (gen/weighted (get space c))]
+            w (weighted (get space c))]
         (if (< n max-length)
           (if w
             (recur (conj r w) (inc n))

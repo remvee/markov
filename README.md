@@ -14,7 +14,7 @@ Generate some:
 
 ## License
 
-Copyright © 2019 R.W. van 't Veer
+Copyright © 2019, 2020 R.W. van 't Veer
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at

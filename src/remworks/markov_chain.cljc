@@ -83,4 +83,7 @@
 (defn generate-text
   "Generate a new sentence from are `state-space`."
   [state-space]
-  (->> state-space generate (s/join " ")))
+  (->> state-space
+       generate
+       (map #(if (= % ::et-cetera) "…" %))
+       (s/join " ")))

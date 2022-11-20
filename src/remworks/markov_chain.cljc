@@ -14,7 +14,8 @@
             (let [k (if (<= i lookback)
                       (->> words (take i))
                       (->> words (drop (- i lookback)) (take lookback)))]
-              (update m (vec k) add-word (when (< i (count words)) (nth words i)))))
+              (update m (vec k) add-word (when (< i (count words))
+                                           (nth words i)))))
           {}
           (range (+ (count words) lookback))))
 
@@ -25,16 +26,16 @@
   `*rnd*` binding ."
   [m]
   #?(:clj (gen/weighted m)
-     ;; cljs version adapted from clojure.data.generators
-     :cljs (let [weights (reductions + (vals m))
-                 total   (last weights)
-                 choices (map vector (keys m) weights)]
-             (let [choice (.floor js/Math (* total (.random js/Math)))]
-               (loop [[[c w] & more] choices]
-                 (when w
-                   (if (< choice w)
-                     c
-                     (recur more))))))))
+     :cljs ;; adapted from clojure.data.generators
+     (let [weights (reductions + (vals m))
+           total   (last weights)
+           choices (map vector (keys m) weights)
+           choice (.floor js/Math (* total (.random js/Math)))]
+       (loop [[[c w] & more] choices]
+         (when w
+           (if (< choice w)
+             c
+             (recur more)))))))
 
 (defn analyse
   "Analyse `corpus` and return a state space.  Option `lookback` determines the
@@ -42,7 +43,8 @@
   largest row length in the corpus if no value is supplied."
   [corpus & {:keys [lookback max-length] :or {lookback 2}}]
   {:space      (reduce (fn [m line]
-                         (merge-with merge-words m (analyse-line line lookback)))
+                         (merge-with merge-words m
+                                     (analyse-line line lookback)))
                        {}
                        corpus)
    :lookback   lookback
@@ -52,18 +54,17 @@
   "Generate new chains from given `state-space`.  When the generated
   chain exceeds `max-length` it will contain `::et-cetera` it the last
   position.  This function uses `weighted` to do its random picking."
-  [{:keys [space lookback max-length] :as state-space}]
-  (let [max-length (or max-length (:max-length state-space))]
-    (loop [r [], n 0]
-      (let [c (->> r reverse (take lookback) reverse)
-            w (weighted (get space c))]
-        (if (< n max-length)
-          (if w
-            (recur (conj r w) (inc n))
-            r)
-          (if w
-            (into r [::et-cetera])
-            r))))))
+  [{:keys [space lookback max-length]}]
+  (loop [r [], n 0]
+    (let [c (->> r reverse (take lookback) reverse)
+          w (weighted (get space c))]
+      (if (< n max-length)
+        (if w
+          (recur (conj r w) (inc n))
+          r)
+        (if w
+          (into r [::et-cetera])
+          r)))))
 
 (defn split-sentences
   "Split `text` into sentences."

@@ -1,0 +1,12 @@
+# build.sr.ht
+
+image: debian/buster
+packages:
+  - openjdk-11-jdk-headless
+  - leiningen
+sources:
+  - https://git.sr.ht/~rwv/markov-clj
+tasks:
+  - test: |
+      cd markov-clj
+      lein test
